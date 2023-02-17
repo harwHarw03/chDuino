@@ -1,0 +1,26 @@
+CPPFLAGS = -Wall -g -O2 -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -mthumb -MMD -DF_CPU=600000000 -DUSB_SERIAL -DLAYOUT_US_ENGLISH -DUSING_MAKEFILE -D__IMXRT1062__ -DARDUINO=10813 -DTEENSYDUINO=154 -DARDUINO_TEENSY41 -I. -ffunction-sections -fdata-sections
+CXXFLAGS = -std=gnu++14 -felide-constructors -fno-exceptions -fpermissive -fno-rtti -Wno-error=narrowing
+LDFLAGS = -Os -Wl,--gc-sections,--relax --specs=nano.specs-mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -mthumb -Timxrt1062_t41.ld
+
+
+# names for the compiler programs
+CC = $(COMPILERPATH)/arm-none-eabi-gcc
+CXX = $(COMPILERPATH)/arm-none-eabi-g++
+OBJCOPY = $(COMPILERPATH)/arm-none-eabi-objcopy
+SIZE = $(COMPILERPATH)/arm-none-eabi-size
+
+
+MCU = IMXRT1062
+MCU_LD = imxrt1062_t41.ld
+MCU_DEF = ARDUINO_TEENSY41
+
+$(TARGET).elf: $(OBJS) $(MCU_LD)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+%.hex: %.elf
+	$(SIZE) $<
+	$(OBJCOPY) -O ihex -R .eeprom $< $@
+ifneq (,$(wildcard $(TOOLSPATH)))
+	$(TOOLSPATH)/teensy_post_compile -file=$(basename $@) -path=$(shell pwd) -tools=$(TOOLSPATH)
+	-$(TOOLSPATH)/teensy_reboot
+endif
